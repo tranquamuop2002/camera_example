@@ -6,7 +6,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:get/get.dart';
 
-import 'common_callback.dart';
+import '../common_callback.dart';
 
 var isSettingCameraBack = true;
 

@@ -5,7 +5,6 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart';
 import 'package:get/state_manager.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,12 +12,9 @@ import 'package:image/image.dart' as img;
 import 'package:saver_gallery/saver_gallery.dart';
 
 import 'camera_controller.dart';
-import 'sticker_custom/image_stickers.dart';
+import '../sticker_custom/image_stickers.dart';
 
 import 'dart:ui' as ui;
-import 'dart:typed_data';
-import 'package:flutter/services.dart';
-import 'package:image/image.dart' as img;
 
 final List<String> framePaths = [
   'assets/icons/1_large.png',
@@ -94,7 +90,6 @@ class _CameraAppState extends State<CameraApp> {
         _controller.cameraController.value.previewSize == null) {
       return const Center(child: CircularProgressIndicator());
     }
-
     return Column(
       children: [
         Stack(
@@ -121,19 +116,22 @@ class _CameraAppState extends State<CameraApp> {
 
             ...stickers.map((sticker) {
               Widget stickerDraggableChild = Transform.rotate(
-                  angle: sticker.angle,
-                  child: SizedBox(
-                    width: sticker.size,
-                    height: sticker.size,
-                    child: Image(
-                      image: sticker.imageProvider,
-                    ),
-                  ));
+                angle: sticker.angle,
+                child: SizedBox(
+                  width: sticker.size,
+                  height: sticker.size,
+                  child: Image(image: sticker.imageProvider),
+                ),
+              );
               Widget draggableEmptyWidget = Container(
                 width: sticker.size,
                 height: sticker.size,
                 decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.withAlpha(150), width: 1)),
+                  border: Border.all(
+                    color: Colors.grey.withAlpha(150),
+                    width: 1,
+                  ),
+                ),
               );
               return Positioned(
                 left: sticker.x,
@@ -146,17 +144,17 @@ class _CameraAppState extends State<CameraApp> {
                     child: draggableEmptyWidget,
                     feedback: stickerDraggableChild,
                     childWhenDragging: Container(),
-                    onDragEnd: (dragDetails) {
+                    onDragEnd: (details) {
                       isDrag = false;
                       final RenderBox renderBox =
                           _stackKey.currentContext!.findRenderObject()
                               as RenderBox;
                       final localOffset = renderBox.globalToLocal(
-                        dragDetails.offset,
+                        details.offset,
                       );
                       setState(() {
-                        sticker.x = localOffset.dx ;
-                        sticker.y = localOffset.dy ;
+                        sticker.x = localOffset.dx;
+                        sticker.y = localOffset.dy;
                       });
                     },
                     onDragStarted: () {
@@ -212,7 +210,6 @@ class _CameraAppState extends State<CameraApp> {
                                 return;
                               }
                               _capturedImagePath.value = path;
-                              print("path here: $path");
                             });
                             _controller.cameraController.pausePreview();
                           },
@@ -288,16 +285,6 @@ class _CameraAppState extends State<CameraApp> {
     );
   }
 
-  Widget _buildControlsThumb() => Container(
-    width: 30,
-    height: 30,
-    decoration: BoxDecoration(
-      color: Colors.blue,
-      borderRadius: BorderRadius.circular(2),
-    ),
-    child: Icon(Icons.crop_free, color: Colors.white, size: 20),
-  );
-
   Widget _buildSticker(UISticker sticker) {
     void onControlPanUpdate(DragUpdateDetails details) {
       Offset centerOfGestureDetector = Offset(sticker.x, sticker.y);
@@ -313,8 +300,7 @@ class _CameraAppState extends State<CameraApp> {
             2;
         size = size.clamp(50, 200);
         sticker.size = size;
-        sticker.angle =
-            touchPositionFromCenter.direction - (math.pi / 180);
+        sticker.angle = touchPositionFromCenter.direction - (math.pi / 180);
       });
     }
 
@@ -558,11 +544,12 @@ class _CameraAppState extends State<CameraApp> {
       canvas.restore();
     }
 
-
     final picture = recorder.endRecording();
     final uiImage = await picture.toImage(1080, 1080);
 
-    final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final byteData = await uiImage.toByteData(
+      format: ui.ImageByteFormat.rawRgba,
+    );
     final buffer = byteData!.buffer;
 
     final imgImage = img.Image.fromBytes(
@@ -576,7 +563,6 @@ class _CameraAppState extends State<CameraApp> {
     return Uint8List.fromList(jpegBytes);
   }
 
-
   Future<T> logExecutionTime<T>(
     String label,
     Future<T> Function() action,
@@ -588,16 +574,23 @@ class _CameraAppState extends State<CameraApp> {
     return result;
   }
 
-  Widget _buildStickerControls(
-      {required Widget child, required double height, required double width, required UISticker sticker}) {
+  Widget _buildStickerControls({
+    required Widget child,
+    required double height,
+    required double width,
+    required UISticker sticker,
+  }) {
     void onControlPanUpdate(DragUpdateDetails details) {
       Offset centerOfGestureDetector = Offset(sticker.x, sticker.y);
       final touchPositionFromCenter =
           details.globalPosition - centerOfGestureDetector;
       setState(() {
-        var size = (math.max(touchPositionFromCenter.dx.abs(),
-            touchPositionFromCenter.dy.abs()) -
-            30) *
+        var size =
+            (math.max(
+                  touchPositionFromCenter.dx.abs(),
+                  touchPositionFromCenter.dy.abs(),
+                ) -
+                30) *
             2;
         size = size.clamp(50, 200);
         sticker.size = size;
@@ -605,30 +598,42 @@ class _CameraAppState extends State<CameraApp> {
             touchPositionFromCenter.direction - (45 * math.pi / 180);
       });
     }
+
     return Transform.rotate(
-        angle: sticker.angle,
-        child: SizedBox(
-          width: width + 30,
-          height: height + 30,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              child,
-              Container(
-                    alignment: Alignment.bottomRight,
-                    child: Stack(
-                      children: [
-                        GestureDetector(
-                          child: _buildControlsThumb(),
-                          behavior: HitTestBehavior.translucent,
-                          onPanUpdate: onControlPanUpdate,
-                        )
-                      ],
-                    ),
-                  )
-            ],
-          ),
-        ));
+      angle: sticker.angle,
+      child: SizedBox(
+        width: width + 30,
+        height: height + 30,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            child,
+            Container(
+              alignment: Alignment.bottomRight,
+              child: Stack(
+                children: [
+                  GestureDetector(
+                    child: _buildControlsThumb(),
+                    behavior: HitTestBehavior.translucent,
+                    onPanUpdate: onControlPanUpdate,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
+
+  Widget _buildControlsThumb() => Container(
+    width: 30,
+    height: 30,
+    decoration: BoxDecoration(
+      color: Colors.blue,
+      borderRadius: BorderRadius.circular(2),
+    ),
+    child: Icon(Icons.crop_free, color: Colors.white, size: 20),
+  );
 
 }

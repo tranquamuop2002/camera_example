@@ -2,7 +2,7 @@ import 'package:camera/camera.dart';
 import 'package:camera_preview/test_image_sticker.dart';
 import 'package:flutter/material.dart';
 
-import 'camera_screen.dart';
+import 'camera/camera_screen.dart';
 
 late List<CameraDescription> _cameras;
 
