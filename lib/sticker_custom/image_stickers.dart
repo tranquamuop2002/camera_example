@@ -40,15 +40,17 @@ class UISticker {
 
   bool editable = false;
 
-  UISticker(
-      {required this.imageProvider,
-      required this.x,
-      required this.y,
-      this.size = 100,
-      this.angle = 0.0,
-      this.opacity = 1.0,
-      this.blendMode = BlendMode.srcATop,
-      this.editable = false, required this.assetPath});
+  UISticker({
+    required this.imageProvider,
+    required this.x,
+    required this.y,
+    this.size = 100,
+    this.angle = 0.0,
+    this.opacity = 1.0,
+    this.blendMode = BlendMode.srcATop,
+    this.editable = false,
+    required this.assetPath,
+  });
 }
 
 /// A widget to draw [backgroundImage] and list of [UISticker]
@@ -70,15 +72,15 @@ class ImageStickers extends StatefulWidget {
 
   final ImageStickersController? controller;
 
-  const ImageStickers(
-      {required this.stickerList,
-      this.minStickerSize = 50.0,
-      this.maxStickerSize = 200.0,
-      this.stickerControlsStyle,
-      this.stickerControlsBehaviour = StickerControlsBehaviour.alwaysShow,
-      this.controller,
-      Key? key})
-      : super(key: key);
+  const ImageStickers({
+    required this.stickerList,
+    this.minStickerSize = 50.0,
+    this.maxStickerSize = 200.0,
+    this.stickerControlsStyle,
+    this.stickerControlsBehaviour = StickerControlsBehaviour.alwaysShow,
+    this.controller,
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -102,11 +104,11 @@ class _ImageStickersState extends State<ImageStickers> {
   }
 
   void getOffset() {
-    final RenderObject? renderBoxWidget =
-        _key.currentContext?.findRenderObject();
+    final RenderObject? renderBoxWidget = _key.currentContext
+        ?.findRenderObject();
     if (renderBoxWidget != null) {
-      stickerController.parentOffset =
-          (renderBoxWidget as RenderBox).localToGlobal(Offset.zero);
+      stickerController.parentOffset = (renderBoxWidget as RenderBox)
+          .localToGlobal(Offset.zero);
     }
   }
 
@@ -120,17 +122,21 @@ class _ImageStickersState extends State<ImageStickers> {
     for (var sticker in stickerList) {
       var drawableSticker = oldStickers[sticker] ?? _DrawableSticker(sticker);
       oldStickers.remove(sticker);
-      var stickerImageStream =
-          sticker.imageProvider.resolve(ImageConfiguration.empty);
+      var stickerImageStream = sticker.imageProvider.resolve(
+        ImageConfiguration.empty,
+      );
       if (stickerImageStream.key != drawableSticker.imageStream?.key) {
         if (drawableSticker.listener != null) {
-          drawableSticker.imageStream
-              ?.removeListener(drawableSticker.listener!);
+          drawableSticker.imageStream?.removeListener(
+            drawableSticker.listener!,
+          );
         }
         drawableSticker.imageInfo?.dispose();
 
-        drawableSticker.listener =
-            ImageStreamListener((ImageInfo image, bool synchronousCall) {
+        drawableSticker.listener = ImageStreamListener((
+          ImageInfo image,
+          bool synchronousCall,
+        ) {
           setState(() {
             drawableSticker.imageInfo = image;
           });
@@ -163,21 +169,24 @@ class _ImageStickersState extends State<ImageStickers> {
 
   @override
   Widget build(BuildContext context) {
-    var loadedStickers =
-        stickerMap.values.where((element) => element.imageInfo != null);
+    var loadedStickers = stickerMap.values.where(
+      (element) => element.imageInfo != null,
+    );
     var editableStickers = loadedStickers
         .where((element) => element.editable)
-        .map((sticker) => _EditableSticker(
-              sticker: sticker,
-              onStateChanged: (isDragged) {
-                setState(() {});
-              },
-              maxStickerSize: widget.maxStickerSize,
-              minStickerSize: widget.minStickerSize,
-              stickerControlsStyle: widget.stickerControlsStyle,
-              controller: stickerController,
-              stickerControlsBehaviour: widget.stickerControlsBehaviour,
-            ))
+        .map(
+          (sticker) => _EditableSticker(
+            sticker: sticker,
+            onStateChanged: (isDragged) {
+              setState(() {});
+            },
+            maxStickerSize: widget.maxStickerSize,
+            minStickerSize: widget.minStickerSize,
+            stickerControlsStyle: widget.stickerControlsStyle,
+            controller: stickerController,
+            stickerControlsBehaviour: widget.stickerControlsBehaviour,
+          ),
+        )
         .toList();
 
     Widget customPaint = CustomPaint(
@@ -194,7 +203,7 @@ class _ImageStickersState extends State<ImageStickers> {
             child: customPaint,
           ),
         ),
-        ...editableStickers
+        ...editableStickers,
       ],
     );
   }
@@ -221,16 +230,16 @@ class _EditableSticker extends StatefulWidget {
   final ImageStickersControlsStyle? stickerControlsStyle;
   final StickerControlsBehaviour stickerControlsBehaviour;
 
-  const _EditableSticker(
-      {required this.sticker,
-      required this.minStickerSize,
-      required this.maxStickerSize,
-      required this.stickerControlsBehaviour,
-      this.onStateChanged,
-      this.stickerControlsStyle,
-      this.controller,
-      Key? key})
-      : super(key: key);
+  const _EditableSticker({
+    required this.sticker,
+    required this.minStickerSize,
+    required this.maxStickerSize,
+    required this.stickerControlsBehaviour,
+    this.onStateChanged,
+    this.stickerControlsStyle,
+    this.controller,
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -247,7 +256,8 @@ class _EditableStickerState extends State<_EditableSticker> {
   void initState() {
     super.initState();
     controlsStyle = widget.stickerControlsStyle ?? ImageStickersControlsStyle();
-    showControls = widget.stickerControlsBehaviour ==
+    showControls =
+        widget.stickerControlsBehaviour ==
             StickerControlsBehaviour.alwaysShow ||
         widget.stickerControlsBehaviour == StickerControlsBehaviour.hideOnTap;
   }
@@ -257,113 +267,119 @@ class _EditableStickerState extends State<_EditableSticker> {
     double height = widget.sticker.size;
     double width =
         (widget.sticker.size / widget.sticker.imageInfo!.image.height) *
-            widget.sticker.imageInfo!.image.width;
+        widget.sticker.imageInfo!.image.width;
 
     Widget stickerDraggableChild = Transform.rotate(
-        angle: widget.sticker.angle,
-        child: SizedBox(
-          width: width,
-          height: height,
-          child: Image(
-            image: widget.sticker.imageProvider,
-          ),
-        ));
+      angle: widget.sticker.angle,
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Image(image: widget.sticker.imageProvider),
+      ),
+    );
     Widget draggableEmptyWidget = Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.withAlpha(150), width: 1)),
+        border: Border.all(color: Colors.grey.withAlpha(150), width: 1),
+      ),
     );
     return Positioned(
       left: widget.sticker.x - width / 2 - controlsStyle.size,
       top: widget.sticker.y - height / 2 - controlsStyle.size,
       child: _buildStickerControls(
-          child: Draggable(
-            child: draggableEmptyWidget,
-            feedback: stickerDraggableChild,
-            childWhenDragging: Container(),
-            dragAnchorStrategy: (draggable, context, position) {
-              final RenderBox renderObject =
-                  context.findRenderObject()! as RenderBox;
-              var local = renderObject.globalToLocal(position);
+        child: Draggable(
+          child: draggableEmptyWidget,
+          feedback: stickerDraggableChild,
+          childWhenDragging: Container(),
+          dragAnchorStrategy: (draggable, context, position) {
+            final RenderBox renderObject =
+                context.findRenderObject()! as RenderBox;
+            var local = renderObject.globalToLocal(position);
 
-              var x = local.dx - width / 2;
-              var y = local.dy - height / 2;
+            var x = local.dx - width / 2;
+            var y = local.dy - height / 2;
 
-              var dx =
-                  x * cos(widget.sticker.angle) - y * sin(widget.sticker.angle);
-              var dy =
-                  x * sin(widget.sticker.angle) + y * cos(widget.sticker.angle);
+            var dx =
+                x * cos(widget.sticker.angle) - y * sin(widget.sticker.angle);
+            var dy =
+                x * sin(widget.sticker.angle) + y * cos(widget.sticker.angle);
 
-              dx = dx + width / 2;
-              dy = dy + height / 2;
+            dx = dx + width / 2;
+            dy = dy + height / 2;
 
-              return Offset(dx, dy);
-            },
-            onDragEnd: (dragDetails) {
-              setState(() {
-                widget.sticker.dragged = false;
-                var parentDx = widget.controller?.parentOffset?.dx ?? 0;
-                var parentDy = widget.controller?.parentOffset?.dy ?? 0;
-                widget.sticker.x = dragDetails.offset.dx + width / 2 - parentDx;
-                widget.sticker.y =
-                    dragDetails.offset.dy + height / 2 - parentDy;
+            return Offset(dx, dy);
+          },
+          onDragEnd: (dragDetails) {
+            setState(() {
+              widget.sticker.dragged = false;
+              var parentDx = widget.controller?.parentOffset?.dx ?? 0;
+              var parentDy = widget.controller?.parentOffset?.dy ?? 0;
+              widget.sticker.x = dragDetails.offset.dx + width / 2 - parentDx;
+              widget.sticker.y = dragDetails.offset.dy + height / 2 - parentDy;
 
-                widget.onStateChanged?.call(false);
-              });
-            },
-            onDragStarted: () {
-              setState(() {
-                widget.sticker.dragged = true;
-                //todo update in parent in onChanged?
-                widget.onStateChanged?.call(true);
-              });
-            },
-          ),
-          width: width,
-          height: height),
+              widget.onStateChanged?.call(false);
+            });
+          },
+          onDragStarted: () {
+            setState(() {
+              widget.sticker.dragged = true;
+              //todo update in parent in onChanged?
+              widget.onStateChanged?.call(true);
+            });
+          },
+        ),
+        width: width,
+        height: height,
+      ),
     );
   }
 
-  Widget _buildStickerControls(
-      {required Widget child, required double height, required double width}) {
+  Widget _buildStickerControls({
+    required Widget child,
+    required double height,
+    required double width,
+  }) {
     return Transform.rotate(
-        angle: widget.sticker.angle,
-        child: SizedBox(
-          width: width + controlsStyle.size * 2,
-          height: height + controlsStyle.size * 2,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              GestureDetector(
-                  onTap: () {
-                    if (widget.stickerControlsBehaviour ==
-                            StickerControlsBehaviour.showOnTap ||
-                        widget.stickerControlsBehaviour ==
-                            StickerControlsBehaviour.hideOnTap) {
-                      setState(() {
-                        showControls = !showControls;
-                      });
-                    }
-                  },
-                  child: child),
-              Visibility(
-                  visible: areControlsVisible(),
-                  child: Container(
-                    alignment: Alignment.bottomRight,
-                    child: Stack(
-                      children: [
-                        GestureDetector(
-                          child: _buildControlsThumb(),
-                          behavior: HitTestBehavior.translucent,
-                          onPanUpdate: onControlPanUpdate,
-                        )
-                      ],
+      angle: widget.sticker.angle,
+      child: SizedBox(
+        width: width + controlsStyle.size * 2,
+        height: height + controlsStyle.size * 2,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            GestureDetector(
+              onTap: () {
+                if (widget.stickerControlsBehaviour ==
+                        StickerControlsBehaviour.showOnTap ||
+                    widget.stickerControlsBehaviour ==
+                        StickerControlsBehaviour.hideOnTap) {
+                  setState(() {
+                    showControls = !showControls;
+                  });
+                }
+              },
+              child: child,
+            ),
+            Visibility(
+              visible: areControlsVisible(),
+              child: Container(
+                alignment: Alignment.bottomRight,
+                child: Stack(
+                  children: [
+                    GestureDetector(
+                      child: _buildControlsThumb(),
+                      behavior: HitTestBehavior.translucent,
+                      onPanUpdate: onControlPanUpdate,
                     ),
-                  ))
-            ],
-          ),
-        ));
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   bool areControlsVisible() {
@@ -371,22 +387,27 @@ class _EditableStickerState extends State<_EditableSticker> {
   }
 
   Widget _buildControlsThumb() => Container(
-        width: controlsStyle.size,
-        height: controlsStyle.size,
-        decoration: BoxDecoration(
-            color: controlsStyle.color,
-            borderRadius: controlsStyle.borderRadius ??
-                BorderRadius.circular(controlsStyle.size / 2)),
-        child: controlsStyle.child ?? Container(),
-      );
+    width: controlsStyle.size,
+    height: controlsStyle.size,
+    decoration: BoxDecoration(
+      color: controlsStyle.color,
+      borderRadius:
+          controlsStyle.borderRadius ??
+          BorderRadius.circular(controlsStyle.size / 2),
+    ),
+    child: controlsStyle.child ?? Container(),
+  );
 
   void onControlPanUpdate(DragUpdateDetails details) {
     Offset centerOfGestureDetector = Offset(widget.sticker.x, widget.sticker.y);
     final touchPositionFromCenter =
         details.globalPosition - centerOfGestureDetector;
     setState(() {
-      var size = (math.max(touchPositionFromCenter.dx.abs(),
-                  touchPositionFromCenter.dy.abs()) -
+      var size =
+          (math.max(
+                touchPositionFromCenter.dx.abs(),
+                touchPositionFromCenter.dy.abs(),
+              ) -
               controlsStyle.size) *
           2;
       size = size.clamp(widget.minStickerSize, widget.maxStickerSize);
@@ -423,11 +444,11 @@ class _DropPainter extends CustomPainter {
         canvas.rotate(sticker.angle);
         canvas.translate(-width / 2, -height / 2);
         canvas.drawImageRect(
-            image,
-            Rect.fromLTWH(
-                0, 0, image.width.toDouble(), image.height.toDouble()),
-            Rect.fromLTWH(0, 0, width, height),
-            paint);
+          image,
+          Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+          Rect.fromLTWH(0, 0, width, height),
+          paint,
+        );
         canvas.restore();
       }
     }
@@ -498,8 +519,9 @@ class ImageStickersController extends ChangeNotifier {
       throw StateError("Controller is not attached to a widget");
     }
     _customPainter!.paint(canvas, _size!);
-    return recorder
-        .endRecording()
-        .toImage(_size!.width.toInt(), _size!.height.toInt());
+    return recorder.endRecording().toImage(
+      _size!.width.toInt(),
+      _size!.height.toInt(),
+    );
   }
 }
