@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
+import 'package:camera_preview/camera/list_sticker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -52,9 +53,9 @@ class _CameraAppState extends State<CameraApp> {
   int _selectedFrameIndex = 0;
   final ImagePicker _imagePicker = ImagePicker();
   final _capturedImagePath = ''.obs;
-  List<UISticker> stickers = [];
   final GlobalKey _stackKey = GlobalKey();
   bool isDrag = false;
+  List<UISticker> stickers = [];
 
   @override
   void initState() {
@@ -90,252 +91,149 @@ class _CameraAppState extends State<CameraApp> {
         _controller.cameraController.value.previewSize == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    return Column(
-      children: [
-        Stack(
-          children: [
-            IgnorePointer(
-              child: SizedBox(
-                key: _stackKey,
-                width: double.infinity,
-                height: MediaQuery.of(context).size.width,
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  clipBehavior: Clip.hardEdge,
-                  child: SizedBox(
-                    width:
-                        _controller.cameraController.value.previewSize!.height,
-                    height:
-                        _controller.cameraController.value.previewSize!.width,
-                    child: CameraPreview(_controller.cameraController),
-                  ),
-                ),
-              ),
-            ),
-
-            ...stickers.map((sticker) {
-              double height = sticker.size;
-              double width =
-                  (sticker.size / MediaQuery.of(context).size.width) *
-                  MediaQuery.of(context).size.width;
-              Widget stickerDraggableChild = Transform.rotate(
-                  angle: sticker.angle,
-                  child: Container(
-                    width: width,
-                    height: height,
-                    decoration: BoxDecoration(
-                        border: Border.all(color: Colors.blue.withAlpha(150), width: 1)),
-                    child: Image(
-                      image: sticker.imageProvider,
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              IgnorePointer(
+                child: SizedBox(
+                  key: _stackKey,
+                  width: double.infinity,
+                  height: MediaQuery.of(context).size.width,
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    clipBehavior: Clip.hardEdge,
+                    child: SizedBox(
+                      width: _controller
+                          .cameraController
+                          .value
+                          .previewSize!
+                          .height,
+                      height:
+                          _controller.cameraController.value.previewSize!.width,
+                      child: CameraPreview(_controller.cameraController),
                     ),
-                  ));
-              return Positioned(
-                left: sticker.x - width / 2,
-                top: sticker.y - height / 2,
-                child: _buildStickerControls(
-                  width: width,
-                  height: height,
-                  sticker: sticker,
-                  child: Draggable(
-                    child: stickerDraggableChild,
-                    feedback: stickerDraggableChild,
-                    childWhenDragging: Container(),
-
-                    onDragEnd: (details) {
-                      isDrag = false;
-                      RenderBox box = _stackKey.currentContext!.findRenderObject() as RenderBox;
-                      Offset localOffset = box.globalToLocal(details.offset);
-
-                      setState(() {
-                        sticker.x = localOffset.dx + width / 2;
-                        sticker.y = localOffset.dy + height / 2 - 20;
-                      });
-
-                    },
-                    onDragStarted: () {
-                      setState(() {
-                        isDrag = true;
-                      });
-                    },
                   ),
-                ),
-              );
-            }),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Image.asset(
-                  framePaths[_selectedFrameIndex],
-                  fit: BoxFit.contain,
                 ),
               ),
-            ),
-          ],
-        ),
-        Obx(
-          () => Visibility(
-            visible: _capturedImagePath.isEmpty,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  onPressed: () {
-                    _pickImageFromGallery();
-                  },
-                  icon: const Icon(Icons.photo_library_outlined),
-                  iconSize: 32,
-                ),
-                Obx(
-                  () => _controller.isTakingPhoto.isTrue
-                      ? Container(
-                          width: 86,
-                          height: 86,
-                          alignment: Alignment.center,
-                          child: const SizedBox(
-                            width: 54,
-                            height: 54,
-                            child: CircularProgressIndicator(),
-                          ),
-                        )
-                      : IconButton(
-                          icon: const Icon(Icons.camera_alt_rounded),
-                          iconSize: 32,
-                          onPressed: () {
-                            _controller.captureCamera((path) {
-                              if (!mounted) {
-                                return;
-                              }
-                              _capturedImagePath.value = path;
-                            });
-                            _controller.cameraController.pausePreview();
-                          },
-                        ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.switch_camera),
-                  iconSize: 32,
-                  onPressed: () {
-                    _controller.cameraController.resumePreview();
-                    _controller.switchCamera();
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-        Obx(
-          () => Visibility(
-            visible: _capturedImagePath.isNotEmpty,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      _capturedImagePath.value = '';
-                      _controller.cameraController.resumePreview();
-                    },
-                    icon: const Icon(Icons.cancel),
-                    label: const Text('Chụp lại'),
+              ListSticker(stackKey: _stackKey, stickers: stickers,),
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Image.asset(
+                    framePaths[_selectedFrameIndex],
+                    fit: BoxFit.contain,
                   ),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (BuildContext context) {
-                          return const Dialog(
-                            backgroundColor: Colors.transparent,
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        },
-                      );
-
-                      try {
-                        await logExecutionTime(
-                          'Processing image',
-                          () => _processImage(
-                            _capturedImagePath.value,
-                            framePaths[_selectedFrameIndex],
-                            context,
-                          ),
-                        );
-                      } finally {
-                        _controller.cameraController.resumePreview();
-                        _capturedImagePath.value = '';
-                        Navigator.of(context).pop();
-                      }
+                ),
+              ),
+            ],
+          ),
+          Obx(
+            () => Visibility(
+              visible: _capturedImagePath.isEmpty,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      _pickImageFromGallery();
                     },
-                    icon: const Icon(Icons.save),
-                    label: const Text('Lưu'),
+                    icon: const Icon(Icons.photo_library_outlined),
+                    iconSize: 32,
+                  ),
+                  Obx(
+                    () => _controller.isTakingPhoto.isTrue
+                        ? Container(
+                            width: 86,
+                            height: 86,
+                            alignment: Alignment.center,
+                            child: const SizedBox(
+                              width: 54,
+                              height: 54,
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.camera_alt_rounded),
+                            iconSize: 32,
+                            onPressed: () {
+                              _controller.captureCamera((path) {
+                                if (!mounted) {
+                                  return;
+                                }
+                                _capturedImagePath.value = path;
+                              });
+                              _controller.cameraController.pausePreview();
+                            },
+                          ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.switch_camera),
+                    iconSize: 32,
+                    onPressed: () {
+                      _controller.cameraController.resumePreview();
+                      _controller.switchCamera();
+                    },
                   ),
                 ],
               ),
             ),
           ),
-        ),
-        _buildListFilter(),
-        _buildStickerSelector(),
-      ],
-    );
-  }
+          Obx(
+            () => Visibility(
+              visible: _capturedImagePath.isNotEmpty,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _capturedImagePath.value = '';
+                        _controller.cameraController.resumePreview();
+                      },
+                      icon: const Icon(Icons.cancel),
+                      label: const Text('Chụp lại'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (BuildContext context) {
+                            return const Dialog(
+                              backgroundColor: Colors.transparent,
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          },
+                        );
 
-  Widget _buildSticker(UISticker sticker, double width, double height) {
-    void onControlPanUpdate(DragUpdateDetails details) {
-      Offset centerOfGestureDetector = Offset(sticker.x, sticker.y);
-      final touchPositionFromCenter =
-          details.globalPosition - centerOfGestureDetector;
-      setState(() {
-        var size =
-            (math.max(
-                  touchPositionFromCenter.dx.abs(),
-                  touchPositionFromCenter.dy.abs(),
-                ) -
-                30) *
-            2;
-        size = size.clamp(50, 150);
-        sticker.size = size;
-        sticker.angle =
-            touchPositionFromCenter.direction - (45 * math.pi / 180);
-      });
-    }
-
-    return Transform.rotate(
-      angle: sticker.angle,
-      child: SizedBox(
-        width: width + 30,
-        height: height + 30,
-        child: Stack(
-          children: [
-            Align(
-              alignment: Alignment.center,
-              child: Container(
-                width: sticker.size,
-                height: sticker.size,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.blue, width: 1),
-                ),
-                child: Image(image: sticker.imageProvider, fit: BoxFit.contain),
-              ),
-            ),
-            Container(
-              alignment: Alignment.bottomRight,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onPanUpdate: onControlPanUpdate,
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: Colors.blue,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Icon(Icons.crop_free, color: Colors.white, size: 20),
+                        try {
+                          await logExecutionTime(
+                            'Processing image',
+                            () => _processImage(
+                              _capturedImagePath.value,
+                              framePaths[_selectedFrameIndex],
+                              context,
+                            ),
+                          );
+                        } finally {
+                          _controller.cameraController.resumePreview();
+                          _capturedImagePath.value = '';
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      icon: const Icon(Icons.save),
+                      label: const Text('Lưu'),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+          _buildListFilter(),
+          _buildStickerSelector(),
+        ],
       ),
     );
   }
@@ -401,6 +299,19 @@ class _CameraAppState extends State<CameraApp> {
         },
       ),
     );
+  }
+
+
+
+  Future<T> logExecutionTime<T>(
+    String label,
+    Future<T> Function() action,
+  ) async {
+    final stopwatch = Stopwatch()..start();
+    final result = await action();
+    stopwatch.stop();
+    debugPrint('$label executed in ${stopwatch.elapsedMilliseconds} ms');
+    return result;
   }
 
   Future<void> _pickImageFromGallery() async {
@@ -504,7 +415,7 @@ class _CameraAppState extends State<CameraApp> {
     );
 
     // ==== 3. VẼ STICKER ====
-    for (final sticker in stickers) {
+    /*for (final sticker in stickers) {
       final ByteData data = await rootBundle.load(sticker.assetPath);
       final Uint8List bytes = data.buffer.asUint8List();
       final ui.Codec stickerCodec = await ui.instantiateImageCodec(bytes);
@@ -534,7 +445,7 @@ class _CameraAppState extends State<CameraApp> {
       );
 
       canvas.restore();
-    }
+    }*/
 
     final picture = recorder.endRecording();
     final uiImage = await picture.toImage(1080, 1080);
@@ -554,79 +465,4 @@ class _CameraAppState extends State<CameraApp> {
     final jpegBytes = img.encodeJpg(imgImage, quality: 100);
     return Uint8List.fromList(jpegBytes);
   }
-
-  Future<T> logExecutionTime<T>(
-    String label,
-    Future<T> Function() action,
-  ) async {
-    final stopwatch = Stopwatch()..start();
-    final result = await action();
-    stopwatch.stop();
-    debugPrint('$label executed in ${stopwatch.elapsedMilliseconds} ms');
-    return result;
-  }
-
-  Widget _buildStickerControls({
-    required Widget child,
-    required double height,
-    required double width,
-    required UISticker sticker,
-  }) {
-    void onControlPanUpdate(DragUpdateDetails details) {
-      Offset centerOfGestureDetector = Offset(sticker.x, sticker.y);
-      final touchPositionFromCenter =
-          details.globalPosition - centerOfGestureDetector;
-      setState(() {
-        var size =
-            (math.max(
-                  touchPositionFromCenter.dx.abs(),
-                  touchPositionFromCenter.dy.abs(),
-                ) -
-                30) * 2;
-        size = size.clamp(50, 200);
-        sticker.size = size;
-        sticker.angle =
-            touchPositionFromCenter.direction - (45 * math.pi / 180);
-      });
-    }
-
-    return Transform.rotate(
-      angle: sticker.angle,
-      child: SizedBox(
-        width: width + 30 * 2,
-        height: height + 30 * 2,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            child,
-            Visibility(
-              visible: !isDrag,
-              child: Container(
-                alignment: Alignment.bottomRight,
-                child: Stack(
-                  children: [
-                    GestureDetector(
-                      child: _buildControlsThumb(),
-                      behavior: HitTestBehavior.translucent,
-                      onPanUpdate: onControlPanUpdate,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildControlsThumb() => Container(
-    width: 30,
-    height: 30,
-    decoration: BoxDecoration(
-      color: Colors.blue,
-      borderRadius: BorderRadius.circular(2),
-    ),
-    child: Icon(Icons.crop_free, color: Colors.white, size: 20),
-  );
 }
