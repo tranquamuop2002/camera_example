@@ -350,6 +350,9 @@ class _EditableStickerState extends State<_EditableSticker> {
                 widget.sticker.dragged = false;
                 var parentDx = widget.controller?.parentOffset?.dx ?? 0;
                 var parentDy = widget.controller?.parentOffset?.dy ?? 0;
+                print('parentDx: ${parentDx}');
+                print('parentDy: ${parentDy}');
+
                 widget.sticker.x = dragDetails.offset.dx + width / 2 - parentDx;
                 widget.sticker.y =
                     dragDetails.offset.dy + height / 2 - parentDy;

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
-import 'package:camera_preview/camera/list_sticker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -117,7 +116,61 @@ class _CameraAppState extends State<CameraApp> {
                   ),
                 ),
               ),
-              ListSticker(stackKey: _stackKey, stickers: stickers,),
+              ...stickers.map((sticker) {
+                double height = sticker.size;
+                double width =
+                    (sticker.size / MediaQuery.of(context).size.width) *
+                    MediaQuery.of(context).size.width;
+
+                Widget draggableWidget = Container(
+                  width: sticker.size,
+                  height: sticker.size,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Colors.grey.withAlpha(150),
+                      width: 1,
+                    ),
+                  ),
+                  child: SizedBox(
+                    width: sticker.size,
+                    height: sticker.size,
+                    child: Image(image: sticker.imageProvider),
+                  ),
+                );
+
+                return Positioned(
+                  left: sticker.x - width / 2,
+                  top: sticker.y - height / 2,
+                  child: _buildStickerControls(
+                    width: width,
+                    height: height,
+                    sticker: sticker,
+                    child: Draggable(
+                      feedback: draggableWidget,
+                      childWhenDragging: Container(),
+
+                      onDragEnd: (details) {
+                        //isDrag = false;
+                        RenderBox box =
+                            _stackKey.currentContext!.findRenderObject()
+                                as RenderBox;
+                        Offset localOffset = box.globalToLocal(details.offset);
+
+                        setState(() {
+                          sticker.x = localOffset.dx + width / 2 - 15;
+                          sticker.y = localOffset.dy + height / 2 - 15;
+                        });
+                      },
+                      onDragStarted: () {
+                        setState(() {
+                          //isDrag = true;
+                        });
+                      },
+                      child: draggableWidget,
+                    ),
+                  ),
+                );
+              }),
               Positioned.fill(
                 child: IgnorePointer(
                   child: Image.asset(
@@ -238,6 +291,76 @@ class _CameraAppState extends State<CameraApp> {
     );
   }
 
+  Widget _buildStickerControls({
+    required Widget child,
+    required double height,
+    required double width,
+    required UISticker sticker,
+  }) {
+    void onControlPanUpdate(DragUpdateDetails details) {
+      Offset centerOfGestureDetector = Offset(sticker.x, sticker.y);
+      final touchPositionFromCenter =
+          details.globalPosition - centerOfGestureDetector;
+      setState(() {
+        var size =
+            (math.max(
+                  touchPositionFromCenter.dx.abs(),
+                  touchPositionFromCenter.dy.abs(),
+                ) +
+                30) *
+            2;
+        size = size.clamp(50, 200);
+        sticker.size = size;
+        print(
+          'touchPositionFromCenter.direction: ${touchPositionFromCenter.direction}',
+        );
+        sticker.angle =
+            touchPositionFromCenter.direction - (45 * math.pi / 180);
+      });
+    }
+
+    return Transform.rotate(
+      angle: sticker.angle,
+      child: SizedBox(
+        width: width + 30,
+        height: height + 30,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            child,
+            Visibility(
+              visible: true,
+              child: Container(
+                alignment: Alignment.bottomRight,
+                child: Stack(
+                  children: [
+                    GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onPanUpdate: onControlPanUpdate,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        child: Icon(
+                          Icons.crop_free,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildStickerSelector() {
     return SizedBox(
       height: 100,
@@ -300,8 +423,6 @@ class _CameraAppState extends State<CameraApp> {
       ),
     );
   }
-
-
 
   Future<T> logExecutionTime<T>(
     String label,
@@ -415,37 +536,57 @@ class _CameraAppState extends State<CameraApp> {
     );
 
     // ==== 3. VẼ STICKER ====
-    /*for (final sticker in stickers) {
+    // ==== 3. VẼ STICKER ====
+    for (final sticker in stickers) {
       final ByteData data = await rootBundle.load(sticker.assetPath);
       final Uint8List bytes = data.buffer.asUint8List();
       final ui.Codec stickerCodec = await ui.instantiateImageCodec(bytes);
       final ui.FrameInfo frameInfo = await stickerCodec.getNextFrame();
       final ui.Image stickerImage = frameInfo.image;
-
-      final double stickerSize = sticker.size;
-      final double centerX = sticker.x;
-      final double centerY = sticker.y;
-
-      final double halfSize = stickerSize / 2;
-
       canvas.save();
 
-      canvas.translate(centerX, centerY);
-      canvas.rotate(sticker.angle * math.pi / 180);
-      canvas.drawImageRect(
-        stickerImage,
-        Rect.fromLTWH(
-          0,
-          0,
-          stickerImage.width.toDouble(),
-          stickerImage.height.toDouble(),
-        ),
-        Rect.fromLTWH(-halfSize, -halfSize, stickerSize, stickerSize),
-        paint,
+      // Calculate scale factor from preview to output (1080x1080)
+      final double previewWidth = MediaQuery.of(context).size.width;
+      final double scale = 1080 / previewWidth;
+
+      // Scale sticker position and size to output image
+      final double stickerSize = sticker.size * scale;
+      final double width = stickerSize;
+      final double height = stickerSize;
+
+      // Adjust position: sticker.x and sticker.y are center in preview,
+      // so scale and use as center in output
+      final double stickerCenterX = sticker.x * scale;
+      final double stickerCenterY = sticker.y * scale;
+
+      print('scale: ${scale}');
+      print('sticker x: ${sticker.x}');
+      print('sticker y: ${sticker.y}');
+
+      Paint stickerPaint = Paint()
+        ..blendMode = sticker.blendMode
+        ..color = Colors.white.withOpacity(sticker.opacity);
+
+      // Draw sticker with rotation and scaling
+      canvas.translate(stickerCenterX, stickerCenterY);
+      canvas.rotate(sticker.angle);
+      canvas.translate(-stickerCenterX, -stickerCenterY);
+
+      Rect src = Rect.fromLTWH(
+        0,
+        0,
+        stickerImage.width.toDouble(),
+        stickerImage.height.toDouble(),
+      );
+      Rect dst = Rect.fromCenter(
+        center: Offset(stickerCenterX, stickerCenterY),
+        width: width,
+        height: height,
       );
 
+      canvas.drawImageRect(stickerImage, src, dst, stickerPaint);
       canvas.restore();
-    }*/
+    }
 
     final picture = recorder.endRecording();
     final uiImage = await picture.toImage(1080, 1080);
